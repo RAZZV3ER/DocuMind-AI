@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | DocuMind AI</title>
+    <meta name="description" content="Create your DocuMind AI account to organize documents and get AI-powered insights.">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
+            background: #f7f8fc;
+            color: #172033;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .signup-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .signup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 22px 7%;
+            border-bottom: 1px solid #e9eaf2;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-size: 21px;
+            font-weight: 750;
+            letter-spacing: -0.6px;
+        }
+
+        .brand-icon {
+            width: 39px;
+            height: 39px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            color: white;
+            font-size: 19px;
+            background: linear-gradient(135deg, #7557f6, #5035d8);
+            box-shadow: 0 5px 14px rgba(100, 75, 230, 0.22);
+        }
+
+        .back-link {
+            color: #596174;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .back-link:hover,
+        .login-link:hover {
+            color: #6549e8;
+        }
+
+        .signup-main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 440px;
+            gap: 65px;
+            align-items: center;
+            width: min(1080px, 90%);
+            margin: 45px auto;
+        }
+
+        .signup-intro {
+            padding: 20px 0;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 8px 12px;
+            border: 1px solid #e5defe;
+            border-radius: 30px;
+            color: #6347df;
+            background: #f0edff;
+            font-size: 12px;
+            font-weight: 750;
+            letter-spacing: 0.5px;
+        }
+
+        .signup-intro h1 {
+            max-width: 540px;
+            margin: 22px 0 17px;
+            font-size: clamp(35px, 4.5vw, 53px);
+            line-height: 1.12;
+            letter-spacing: -2px;
+        }
+
+        .gradient-text {
+            color: #6849e9;
+        }
+
+        .signup-intro > p {
+            max-width: 490px;
+            color: #697286;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .benefit-list {
+            display: grid;
+            gap: 19px;
+            margin-top: 34px;
+        }
+
+        .benefit {
+            display: flex;
+            align-items: flex-start;
+            gap: 13px;
+        }
+
+        .benefit-icon {
+            flex-shrink: 0;
+            width: 37px;
+            height: 37px;
+            display: grid;
+            place-items: center;
+            border-radius: 11px;
+            background: #eeebff;
+            color: #6347df;
+            font-size: 17px;
+        }
+
+        .benefit h3 {
+            margin: 1px 0 5px;
+            font-size: 14px;
+        }
+
+        .benefit p {
+            margin: 0;
+            color: #7b8293;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .signup-card {
+            padding: 34px;
+            border: 1px solid #e9eaf2;
+            border-radius: 22px;
+            background: white;
+            box-shadow: 0 18px 55px rgba(32, 38, 74, 0.07);
+        }
+
+        .signup-card h2 {
+            margin: 0 0 9px;
+            font-size: 27px;
+            letter-spacing: -0.8px;
+        }
+
+        .card-description {
+            margin: 0 0 25px;
+            color: #788094;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .flash-messages {
+            display: grid;
+            gap: 9px;
+            margin-bottom: 18px;
+        }
+
+        .flash-message {
+            padding: 12px 13px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .flash-message.success {
+            color: #176b43;
+            background: #e9f8ef;
+            border: 1px solid #c8eed6;
+        }
+
+        .flash-message.error,
+        .flash-message.danger {
+            color: #a12c39;
+            background: #fff0f1;
+            border: 1px solid #ffd5d9;
+        }
+
+        .flash-message.warning {
+            color: #885b12;
+            background: #fff7e6;
+            border: 1px solid #f5e2b8;
+        }
+
+        .flash-message.info {
+            color: #3157a5;
+            background: #eef4ff;
+            border: 1px solid #d8e5ff;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #343c50;
+            font-size: 13px;
+            font-weight: 650;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .form-group input {
+            width: 100%;
+            min-height: 48px;
+            padding: 13px 14px;
+            border: 1px solid #dfe2ec;
+            border-radius: 10px;
+            outline: none;
+            background: #fff;
+            color: #20283b;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-wrap input {
+            padding-right: 68px;
+        }
+
+        .form-group input:focus {
+            border-color: #795cf1;
+            box-shadow: 0 0 0 3px rgba(121, 92, 241, 0.12);
+        }
+
+        .form-group input::placeholder {
+            color: #a4a9b7;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            padding: 5px;
+            border: none;
+            background: transparent;
+            color: #6950df;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .password-hint {
+            margin-top: 7px;
+            color: #838a9a;
+            font-size: 12px;
+        }
+
+        .terms-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            margin: 5px 0 21px;
+            color: #70788b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .terms-row input {
+            margin-top: 3px;
+            accent-color: #6849e9;
+        }
+
+        .terms-row a {
+            color: #6246df;
+            font-weight: 650;
+        }
+
+        .signup-button {
+            width: 100%;
+            min-height: 49px;
+            padding: 13px 18px;
+            border: none;
+            border-radius: 11px;
+            color: white;
+            background: linear-gradient(135deg, #7557f6, #5639dd);
+            box-shadow: 0 7px 17px rgba(99, 72, 224, 0.2);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .signup-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(99, 72, 224, 0.28);
+        }
+
+        .login-prompt {
+            margin: 22px 0 0;
+            color: #737b8e;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .login-link {
+            color: #6347df;
+            font-weight: 750;
+        }
+
+        .verification-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            margin-top: 22px;
+            padding: 12px;
+            border-radius: 10px;
+            background: #f7f6ff;
+            color: #6e668e;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .verification-note span {
+            color: #6849e9;
+        }
+
+        .signup-footer {
+            padding: 20px;
+            border-top: 1px solid #e9eaf2;
+            color: #9096a5;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        @media (max-width: 850px) {
+            .signup-main {
+                grid-template-columns: 1fr;
+                gap: 25px;
+                max-width: 480px;
+                margin: 35px auto;
+            }
+
+            .signup-intro {
+                padding-bottom: 0;
+            }
+
+            .signup-intro h1 {
+                font-size: 38px;
+            }
+
+            .benefit-list {
+                gap: 14px;
+                margin-top: 23px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .signup-header {
+                padding: 16px 5%;
+            }
+
+            .brand {
+                font-size: 18px;
+            }
+
+            .brand-icon {
+                width: 35px;
+                height: 35px;
+            }
+
+            .back-link {
+                font-size: 12px;
+            }
+
+            .signup-main {
+                width: 91%;
+                margin: 25px auto;
+            }
+
+            .signup-intro h1 {
+                font-size: 34px;
+            }
+
+            .signup-card {
+                padding: 24px 19px;
+                border-radius: 17px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="signup-page">
+
+    <header class="signup-header">
+        <a href="{{ url_for('index') }}" class="brand">
+            <span class="brand-icon">D</span>
+            <span>DocuMind AI</span>
+        </a>
+
+        <a href="{{ url_for('index') }}" class="back-link">
+            ← Back to home
+        </a>
+    </header>
+
+    <main class="signup-main">
+
+        <section class="signup-intro">
+            <span class="eyebrow">YOUR PERSONAL AI WORKSPACE</span>
+
+            <h1>
+                Make your documents
+                <span class="gradient-text">work smarter.</span>
+            </h1>
+
+            <p>
+                Create your free account and start organizing your documents,
+                asking questions, and getting AI-powered summaries in one place.
+            </p>
+
+            <div class="benefit-list">
+
+                <div class="benefit">
+                    <div class="benefit-icon">▤</div>
+                    <div>
+                        <h3>Keep your documents organized</h3>
+                        <p>Upload and access your personal documents from your workspace.</p>
+                    </div>
+                </div>
+
+                <div class="benefit">
+                    <div class="benefit-icon">✦</div>
+                    <div>
+                        <h3>Ask questions with AI</h3>
+                        <p>Get answers based on the text extracted from your PDFs.</p>
+                    </div>
+                </div>
+
+                <div class="benefit">
+                    <div class="benefit-icon">↗</div>
+                    <div>
+                        <h3>Save time with summaries</h3>
+                        <p>Understand long documents faster with AI-generated summaries.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="signup-card">
+            <h2>Create your account</h2>
+            <p class="card-description">
+                Enter your details to get started with DocuMind AI.
+            </p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form
+                class="signup-form"
+                action="{{ url_for('signup') }}"
+                method="POST"
+                autocomplete="on"
+                id="signupForm"
+            >
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input
+                        id="email"
+                        type="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Create password</label>
+
+                    <div class="input-wrap">
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            placeholder="At least 8 characters"
+                            minlength="8"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            data-target="password"
+                        >
+                            Show
+                        </button>
+                    </div>
+
+                    <div class="password-hint">
+                        Use at least 8 characters.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm password</label>
+
+                    <div class="input-wrap">
+                        <input
+                            id="confirmPassword"
+                            type="password"
+                            placeholder="Enter your password again"
+                            minlength="8"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            data-target="confirmPassword"
+                        >
+                            Show
+                        </button>
+                    </div>
+                </div>
+
+                <label class="terms-row">
+                    <input type="checkbox" id="agreeTerms" required>
+                    <span>
+                        I agree to use DocuMind AI responsibly and understand
+                        that AI-generated answers may need verification.
+                    </span>
+                </label>
+
+                <button type="submit" class="signup-button">
+                    Create account →
+                </button>
+            </form>
+
+            <p class="login-prompt">
+                Already have an account?
+                <a href="{{ url_for('login') }}" class="login-link">
+                    Log in
+                </a>
+            </p>
+
+            <div class="verification-note">
+                <span>✉</span>
+                <div>
+                    <strong>Email verification:</strong>
+                    If email confirmation is enabled in Supabase, check your
+                    inbox after signup and verify your email before logging in.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="signup-footer">
+        © 2026 DocuMind AI. Your documents, organized intelligently.
+    </footer>
+
+</div>
+
+<script>
+    // Show or hide password fields.
+    document.querySelectorAll(".toggle-password").forEach(function(button) {
+        button.addEventListener("click", function() {
+            const input = document.getElementById(button.dataset.target);
+
+            if (input.type === "password") {
+                input.type = "text";
+                button.textContent = "Hide";
+            } else {
+                input.type = "password";
+                button.textContent = "Show";
+            }
+        });
+    });
+
+    // Validate password confirmation before submitting.
+    document.getElementById("signupForm").addEventListener("submit", function(event) {
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+
+        if (password !== confirmPassword) {
+            event.preventDefault();
+            alert("Passwords do not match. Please check again.");
+            document.getElementById("confirmPassword").focus();
+        }
+    });
+</script>
+
+</body>
+</html>

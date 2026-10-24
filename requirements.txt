@@ -1,0 +1,23 @@
+# Web Framework & Sessions
+Flask>=3.0.0
+Flask-Session>=0.8.0
+cachelib>=0.17.0
+Werkzeug>=3.0.0
+python-dotenv>=1.0.0
+
+# Database & Storage
+supabase>=2.0.0
+
+# AI & LLM
+groq>=0.9.0
+
+# Document Processing
+pypdf>=4.0.0
+
+# Retrieval & Machine Learning (Hybrid Search)
+sentence-transformers>=2.2.0
+scikit-learn>=1.3.0
+numpy>=1.24.0
+
+# Production WSGI Server for Deployment (Render / Railway / Linux)
+gunicorn>=21.2.0

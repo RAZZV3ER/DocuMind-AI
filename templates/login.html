@@ -1,0 +1,745 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Log In | DocuMind AI</title>
+
+    <meta
+        name="description"
+        content="Log in to your DocuMind AI account to manage documents and ask questions about PDFs."
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <style>
+        :root {
+            --primary: #7257e8;
+            --primary-dark: #5b43cb;
+            --text: #202436;
+            --muted: #7b8294;
+            --border: #e5e7ef;
+            --background: #f7f8fc;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--background);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        /* HEADER */
+
+        .auth-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 20px 7%;
+            border-bottom: 1px solid var(--border);
+            background: var(--white);
+        }
+
+        .auth-brand {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+
+        .auth-brand span {
+            color: var(--primary);
+        }
+
+        .auth-home-link {
+            color: #5f687a;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .auth-home-link:hover {
+            color: var(--primary);
+        }
+
+        /* MAIN LAYOUT */
+
+        .auth-main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            flex: 1;
+            width: min(1050px, 90%);
+            align-items: center;
+            gap: 70px;
+            margin: 0 auto;
+            padding: 55px 0;
+        }
+
+        /* LEFT PANEL */
+
+        .auth-intro {
+            padding: 15px 0;
+        }
+
+        .auth-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 22px;
+            padding: 8px 12px;
+            border: 1px solid #e4defe;
+            border-radius: 30px;
+            background: #f0edff;
+            color: var(--primary-dark);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+
+        .auth-badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .auth-intro h1 {
+            margin: 0 0 20px;
+            font-size: clamp(37px, 4.4vw, 55px);
+            line-height: 1.12;
+            letter-spacing: -2px;
+        }
+
+        .auth-intro h1 span {
+            color: var(--primary);
+        }
+
+        .auth-description {
+            max-width: 440px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.9;
+        }
+
+        .auth-benefits {
+            display: flex;
+            flex-direction: column;
+            gap: 17px;
+            margin-top: 32px;
+        }
+
+        .auth-benefit {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .auth-benefit-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 35px;
+            height: 35px;
+            border-radius: 10px;
+            background: #eee9ff;
+            color: var(--primary-dark);
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .auth-benefit h3 {
+            margin: 1px 0 4px;
+            font-size: 13px;
+        }
+
+        .auth-benefit p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        /* LOGIN CARD */
+
+        .auth-card {
+            width: 100%;
+            max-width: 430px;
+            margin: 0 auto;
+            padding: 34px;
+            border: 1px solid var(--border);
+            border-radius: 19px;
+            background: var(--white);
+            box-shadow: 0 18px 55px rgba(33, 37, 68, 0.07);
+        }
+
+        .auth-card-heading {
+            margin-bottom: 27px;
+        }
+
+        .auth-card-heading h2 {
+            margin: 0 0 9px;
+            font-size: 27px;
+            letter-spacing: -0.8px;
+        }
+
+        .auth-card-heading p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        /* FLASH MESSAGES */
+
+        .auth-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            margin-bottom: 18px;
+        }
+
+        .auth-message {
+            padding: 11px 12px;
+            border: 1px solid #e4e7ee;
+            border-radius: 9px;
+            background: #f8f9fc;
+            color: #50596b;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .auth-message.success {
+            border-color: #c6ead2;
+            background: #f0fbf3;
+            color: #237640;
+        }
+
+        .auth-message.error {
+            border-color: #f0d0d0;
+            background: #fff5f5;
+            color: #a33636;
+        }
+
+        /* FORM */
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .auth-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .auth-label {
+            color: #343b4c;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .auth-input-wrap {
+            position: relative;
+        }
+
+        .auth-input {
+            width: 100%;
+            min-height: 46px;
+            padding: 12px 13px;
+            border: 1px solid #dfe2eb;
+            border-radius: 9px;
+            outline: none;
+            background: #fdfdff;
+            color: var(--text);
+            font-size: 13px;
+            transition:
+                border-color 0.2s,
+                box-shadow 0.2s;
+        }
+
+        .auth-input:focus {
+            border-color: #aa98ff;
+            box-shadow: 0 0 0 3px rgba(114, 87, 232, 0.1);
+        }
+
+        .auth-input::placeholder {
+            color: #a0a6b4;
+        }
+
+        .auth-password-input {
+            padding-right: 75px;
+        }
+
+        .auth-toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            padding: 5px 0 5px 8px;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: var(--primary-dark);
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .auth-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            min-height: 47px;
+            margin-top: 4px;
+            padding: 12px 16px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--primary);
+            color: var(--white);
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition:
+                background 0.2s,
+                transform 0.2s;
+        }
+
+        .auth-submit:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .auth-submit:focus-visible,
+        .auth-toggle-password:focus-visible {
+            outline: 3px solid #c7bcff;
+            outline-offset: 3px;
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 23px 0;
+            color: #969bad;
+            font-size: 11px;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            height: 1px;
+            flex: 1;
+            background: var(--border);
+            content: "";
+        }
+
+        .auth-signup {
+            color: #697184;
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .auth-signup a {
+            color: var(--primary-dark);
+            font-weight: 800;
+        }
+
+        .auth-signup a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-security-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 24px;
+            padding: 12px;
+            border-radius: 9px;
+            background: #f7f6fc;
+            color: #777f91;
+            font-size: 10px;
+            line-height: 1.7;
+        }
+
+        /* FOOTER */
+
+        .auth-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: var(--white);
+            color: #858c9c;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 800px) {
+            .auth-main {
+                grid-template-columns: 1fr;
+                gap: 35px;
+                width: min(470px, 90%);
+                padding: 40px 0;
+            }
+
+            .auth-intro {
+                text-align: center;
+            }
+
+            .auth-intro h1 {
+                font-size: 40px;
+            }
+
+            .auth-description {
+                margin: 0 auto;
+                font-size: 13px;
+            }
+
+            .auth-benefits {
+                display: none;
+            }
+
+            .auth-card {
+                max-width: 470px;
+            }
+        }
+
+        @media (max-width: 450px) {
+            .auth-header {
+                padding: 17px 5%;
+            }
+
+            .auth-brand {
+                font-size: 21px;
+            }
+
+            .auth-main {
+                width: 90%;
+                gap: 25px;
+                padding: 30px 0;
+            }
+
+            .auth-intro h1 {
+                font-size: 34px;
+                letter-spacing: -1.2px;
+            }
+
+            .auth-card {
+                padding: 24px 20px;
+                border-radius: 15px;
+            }
+
+            .auth-card-heading h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+
+    <header class="auth-header">
+
+        <a
+            class="auth-brand"
+            href="{{ url_for('index') }}"
+        >
+            DocuMind <span>AI</span>
+        </a>
+
+        <a
+            class="auth-home-link"
+            href="{{ url_for('index') }}"
+        >
+            ← Back to home
+        </a>
+
+    </header>
+
+
+    <main class="auth-main">
+
+        <!-- LEFT INTRODUCTION -->
+
+        <section class="auth-intro">
+
+            <div class="auth-badge">
+                <span class="auth-badge-dot"></span>
+                YOUR PERSONAL AI DOCUMENT ASSISTANT
+            </div>
+
+            <h1>
+                Welcome back.<br>
+                <span>Your documents await.</span>
+            </h1>
+
+            <p class="auth-description">
+                Sign in to your DocuMind AI workspace to organize
+                your files, ask questions about PDFs, and get
+                helpful document summaries.
+            </p>
+
+
+            <div class="auth-benefits">
+
+                <div class="auth-benefit">
+
+                    <div class="auth-benefit-icon" aria-hidden="true">
+                        ▤
+                    </div>
+
+                    <div>
+                        <h3>Your documents in one place</h3>
+                        <p>
+                            Access the files in your personal workspace.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="auth-benefit">
+
+                    <div class="auth-benefit-icon" aria-hidden="true">
+                        ✦
+                    </div>
+
+                    <div>
+                        <h3>Get help from AI</h3>
+                        <p>
+                            Ask questions and summarize readable PDF text.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="auth-benefit">
+
+                    <div class="auth-benefit-icon" aria-hidden="true">
+                        ✓
+                    </div>
+
+                    <div>
+                        <h3>Personal workspace</h3>
+                        <p>
+                            Your account provides access to your documents.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- LOGIN FORM -->
+
+        <section class="auth-card">
+
+            <div class="auth-card-heading">
+
+                <h2>Log in</h2>
+
+                <p>
+                    Enter your account details to continue.
+                </p>
+
+            </div>
+
+
+            <!-- Flask flash messages -->
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+
+                <div class="auth-messages" aria-live="polite">
+
+                    {% for category, message in messages %}
+
+                    <div class="auth-message {{ category }}">
+                        {{ message }}
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+            {% endwith %}
+
+
+            <form
+                class="auth-form"
+                action="{{ url_for('login') }}"
+                method="post"
+                autocomplete="on"
+            >
+
+                <div class="auth-field">
+
+                    <label
+                        class="auth-label"
+                        for="email"
+                    >
+                        Email address
+                    </label>
+
+                    <input
+                        class="auth-input"
+                        id="email"
+                        type="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
+                        maxlength="254"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="auth-field">
+
+                    <label
+                        class="auth-label"
+                        for="password"
+                    >
+                        Password
+                    </label>
+
+                    <div class="auth-input-wrap">
+
+                        <input
+                            class="auth-input auth-password-input"
+                            id="password"
+                            type="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            class="auth-toggle-password"
+                            id="togglePassword"
+                            type="button"
+                            aria-controls="password"
+                            aria-pressed="false"
+                        >
+                            Show
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="auth-submit"
+                    type="submit"
+                >
+                    Log in to your account
+                    <span aria-hidden="true">→</span>
+                </button>
+
+            </form>
+
+
+            <div class="auth-divider">
+                NEW TO DOCUMIND AI?
+            </div>
+
+
+            <p class="auth-signup">
+                Don't have an account?
+                <a href="{{ url_for('signup') }}">
+                    Create an account
+                </a>
+            </p>
+
+
+            <div class="auth-security-note">
+
+                <span aria-hidden="true">🔒</span>
+
+                <span>
+                    Use your own account credentials. Never share
+                    your password or API keys with anyone.
+                </span>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+
+    <footer class="auth-footer">
+        © 2026 DocuMind AI. Your documents, organized smarter.
+    </footer>
+
+
+    <!-- SHOW / HIDE PASSWORD -->
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const passwordInput = document.getElementById("password");
+            const togglePassword = document.getElementById("togglePassword");
+
+            togglePassword.addEventListener("click", function () {
+
+                const isPasswordHidden =
+                    passwordInput.type === "password";
+
+                passwordInput.type =
+                    isPasswordHidden ? "text" : "password";
+
+                togglePassword.textContent =
+                    isPasswordHidden ? "Hide" : "Show";
+
+                togglePassword.setAttribute(
+                    "aria-pressed",
+                    String(isPasswordHidden)
+                );
+
+            });
+
+        });
+    </script>
+
+</body>
+</html>

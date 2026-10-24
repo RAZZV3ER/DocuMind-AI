@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment secrets
+.env
+.env.local
+*.env
+
+# Flask & Sessions
+flask_sessions/
+instance/
+.webassets-cache
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Evaluation & Local temp outputs
+evaluation_results.json

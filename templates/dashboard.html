@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>DocuMind AI | Dashboard</title>
+    <meta name="description"
+          content="Manage your documents and ask AI questions about your PDFs with DocuMind AI.">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Markdown rendering and HTML sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
+    <style>
+        :root {
+            --dm-primary: #7257e8;
+            --dm-primary-dark: #5b43cb;
+            --dm-text: #171717;
+            --dm-muted: #666666;
+            --dm-border: #e8eaf1;
+            --dm-background: #f8f9fc;
+            --dm-white: #ffffff;
+            --dm-sidebar-width: 280px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            color: var(--dm-text);
+            background: var(--dm-background);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        button,
+        input,
+        textarea {
+            font: inherit;
+        }
+
+        button,
+        a {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .dm-app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* =========================
+           SIDEBAR
+        ========================= */
+
+        .dm-sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            width: var(--dm-sidebar-width);
+            padding: 22px 16px;
+            overflow-y: auto;
+            border-right: 1px solid var(--dm-border);
+            background: #ffffff;
+            transition: transform 0.25s ease;
+        }
+
+        .dm-brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding: 0 5px;
+        }
+
+        .dm-brand {
+            font-size: 23px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+
+        .dm-brand span {
+            color: var(--dm-primary);
+        }
+
+        .dm-sidebar-close {
+            display: none;
+            border: 0;
+            background: transparent;
+            color: var(--dm-muted);
+            font-size: 22px;
+        }
+
+        .dm-new-chat {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ded7ff;
+            border-radius: 11px;
+            background: #f5f2ff;
+            color: var(--dm-primary-dark);
+            font-size: 13px;
+            font-weight: 800;
+            transition: background 0.2s ease;
+        }
+
+        .dm-new-chat:hover {
+            background: #ece6ff;
+        }
+
+        .dm-side-label {
+            margin: 26px 7px 10px;
+            color: var(--dm-muted);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Document search */
+
+        .dm-search-wrap {
+            position: relative;
+        }
+
+        .dm-search-icon {
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            color: var(--dm-muted);
+            font-size: 15px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .dm-search {
+            width: 100%;
+            padding: 11px 12px 11px 35px;
+            border: 1px solid var(--dm-border);
+            border-radius: 9px;
+            outline: none;
+            background: #ffffff;
+            color: #111111;
+            font-size: 12px;
+        }
+
+        .dm-search:focus,
+        .dm-question:focus {
+            border-color: #b7a8ff;
+            box-shadow: 0 0 0 3px rgba(114, 87, 232, 0.09);
+        }
+
+        /* Sidebar document list */
+
+        .dm-document-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .dm-document-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            background: transparent;
+            color: #222222;
+            text-align: left;
+            transition: background 0.15s ease;
+        }
+
+        .dm-document-item:hover {
+            background: #f7f6fc;
+        }
+
+        .dm-document-item.is-selected {
+            border-color: #e5dfff;
+            background: #f2efff;
+            color: var(--dm-primary-dark);
+        }
+
+        .dm-document-icon,
+        .dm-selected-icon,
+        .dm-card-file-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 38px;
+            height: 40px;
+            border-radius: 9px;
+            background: #f0edff;
+            color: var(--dm-primary);
+            font-size: 10px;
+            font-weight: 900;
+        }
+
+        .dm-document-info,
+        .dm-account-info,
+        .dm-card-info,
+        .dm-selected-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .dm-document-name {
+            display: block;
+            overflow: hidden;
+            font-size: 12px;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dm-document-meta {
+            display: block;
+            margin-top: 4px;
+            color: var(--dm-muted);
+            font-size: 10px;
+        }
+
+        .dm-empty-sidebar,
+        .dm-no-search-results {
+            padding: 12px 7px;
+            color: var(--dm-muted);
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .dm-no-search-results {
+            display: none;
+        }
+
+        /* Sidebar account area */
+
+        .dm-sidebar-bottom {
+            margin-top: auto;
+            padding-top: 22px;
+        }
+
+        .dm-account {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 5px 8px;
+            border-top: 1px solid var(--dm-border);
+        }
+
+        .dm-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #eee9ff;
+            color: var(--dm-primary-dark);
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .dm-account-name {
+            display: block;
+            overflow-wrap: anywhere;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .dm-account-subtitle {
+            display: block;
+            margin-top: 3px;
+            color: var(--dm-muted);
+            font-size: 10px;
+        }
+
+        .dm-logout {
+            padding: 7px;
+            border: 1px solid var(--dm-border);
+            border-radius: 8px;
+            background: #ffffff;
+            color: #222222;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* =========================
+           MAIN AREA
+        ========================= */
+
+        .dm-main {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 100vh;
+            margin-left: var(--dm-sidebar-width);
+        }
+
+        .dm-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            min-height: 67px;
+            padding: 14px 30px;
+            border-bottom: 1px solid var(--dm-border);
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(12px);
+        }
+
+        .dm-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .dm-menu-button {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--dm-border);
+            border-radius: 9px;
+            background: #ffffff;
+            color: #111111;
+            font-size: 19px;
+        }
+
+        .dm-page-title {
+            overflow: hidden;
+            font-size: 14px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dm-topbar-caption {
+            margin-top: 4px;
+            color: var(--dm-muted);
+            font-size: 11px;
+        }
+
+        .dm-upload-button,
+        .dm-send {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 9px;
+            background: var(--dm-primary);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .dm-upload-button:hover,
+        .dm-send:hover {
+            background: var(--dm-primary-dark);
+        }
+
+        .dm-content {
+            width: min(920px, 100%);
+            margin: 0 auto;
+            padding: 36px 30px 55px;
+        }
+
+        /* =========================
+           FLASH MESSAGES
+        ========================= */
+
+        .dm-flashes {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            margin-bottom: 20px;
+        }
+
+        .dm-flash {
+            padding: 12px 15px;
+            border: 1px solid var(--dm-border);
+            border-radius: 10px;
+            background: #ffffff;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .dm-flash.success {
+            border-color: #c6ead2;
+            background: #f0fbf3;
+            color: #176b35;
+        }
+
+        .dm-flash.error {
+            border-color: #f0d0d0;
+            background: #fff5f5;
+            color: #a33636;
+        }
+
+        /* =========================
+           HERO AND STATISTICS
+        ========================= */
+
+        .dm-hero {
+            margin: 10px 0 28px;
+            text-align: center;
+        }
+
+        .dm-hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 19px;
+            padding: 8px 12px;
+            border: 1px solid #e4defe;
+            border-radius: 30px;
+            background: #f0edff;
+            color: var(--dm-primary-dark);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .dm-hero h1 {
+            margin: 0 0 15px;
+            font-size: clamp(30px, 4vw, 43px);
+            line-height: 1.2;
+            letter-spacing: -1.7px;
+        }
+
+        .dm-hero h1 span {
+            color: var(--dm-primary);
+        }
+
+        .dm-hero-description {
+            max-width: 550px;
+            margin: 0 auto;
+            color: var(--dm-muted);
+            font-size: 13px;
+            line-height: 1.9;
+        }
+
+        .dm-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 13px;
+            margin: 30px 0;
+        }
+
+        .dm-stat-card {
+            padding: 17px;
+            border: 1px solid var(--dm-border);
+            border-radius: 13px;
+            background: #ffffff;
+        }
+
+        .dm-stat-label,
+        .dm-stat-caption {
+            color: var(--dm-muted);
+            font-size: 11px;
+        }
+
+        .dm-stat-number {
+            margin-top: 7px;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .dm-stat-caption {
+            margin-top: 4px;
+            font-size: 10px;
+        }
+
+        /* =========================
+           SELECTED DOCUMENT
+        ========================= */
+
+        .dm-selected-document {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 17px;
+            padding: 13px;
+            border: 1px solid #e5dfff;
+            border-radius: 12px;
+            background: #f7f5ff;
+        }
+
+        .dm-selected-document.is-visible {
+            display: flex;
+        }
+
+        .dm-selected-label {
+            color: var(--dm-primary-dark);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .dm-selected-name {
+            display: block;
+            overflow: hidden;
+            margin-top: 3px;
+            font-size: 12px;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dm-clear-selection {
+            padding: 7px 9px;
+            border: 1px solid #e4defe;
+            border-radius: 8px;
+            background: #ffffff;
+            color: var(--dm-primary-dark);
+            font-size: 10px;
+        }
+
+        /* =========================
+           QUESTION COMPOSER
+        ========================= */
+
+        .dm-composer {
+            padding: 16px;
+            border: 1px solid #e2e4ed;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 9px 30px rgba(31, 35, 61, 0.04);
+        }
+
+        .dm-composer-top,
+        .dm-composer-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .dm-composer-top {
+            margin-bottom: 11px;
+        }
+
+        .dm-composer-title {
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .dm-composer-hint,
+        .dm-composer-note {
+            color: var(--dm-muted);
+            font-size: 10px;
+        }
+
+        .dm-question {
+            display: block;
+            width: 100%;
+            min-height: 100px;
+            padding: 13px;
+            resize: vertical;
+            border: 1px solid var(--dm-border);
+            border-radius: 10px;
+            outline: none;
+            background: #ffffff;
+            color: #111111;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .dm-question::placeholder {
+            color: #777777;
+        }
+
+        .dm-composer-bottom {
+            flex-wrap: wrap;
+            margin-top: 13px;
+        }
+
+        .dm-composer-actions,
+        .dm-chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .dm-action-button,
+        .dm-mini-button,
+        .dm-copy-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 9px 12px;
+            border: 1px solid var(--dm-border);
+            border-radius: 9px;
+            background: #ffffff;
+            color: #222222;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .dm-action-button:hover,
+        .dm-mini-button:hover,
+        .dm-copy-button:hover {
+            border-color: #c7bcff;
+            color: var(--dm-primary-dark);
+        }
+
+        .dm-action-button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* Quick prompts */
+
+        .dm-quick-prompts {
+            margin-top: 22px;
+        }
+
+        .dm-quick-heading {
+            margin-bottom: 12px;
+            color: #444444;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .dm-chip {
+            padding: 9px 12px;
+            border: 1px solid var(--dm-border);
+            border-radius: 30px;
+            background: #ffffff;
+            color: #222222;
+            font-size: 11px;
+        }
+
+        .dm-chip:hover {
+            border-color: #c7bcff;
+            color: var(--dm-primary-dark);
+        }
+
+        /* =========================
+           AI RESPONSE
+        ========================= */
+
+        .dm-result {
+            margin-top: 28px;
+            overflow: hidden;
+            border: 1px solid var(--dm-border);
+            border-radius: 15px;
+            background: #ffffff;
+        }
+
+        .dm-result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 17px;
+            border-bottom: 1px solid var(--dm-border);
+        }
+
+        .dm-result-heading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .dm-result-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border-radius: 10px;
+            background: #eee9ff;
+            color: var(--dm-primary-dark);
+            font-size: 17px;
+        }
+
+        .dm-result-title {
+            margin: 0;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .dm-result-subtitle {
+            margin-top: 4px;
+            color: var(--dm-muted);
+            font-size: 10px;
+            overflow-wrap: anywhere;
+        }
+
+        .dm-result-body {
+            min-width: 0;
+            padding: 20px;
+        }
+
+        .dm-question-display {
+            margin-bottom: 20px;
+            padding: 12px 14px;
+            border-left: 3px solid #c5b7ff;
+            border-radius: 0 8px 8px 0;
+            background: #f8f6ff;
+            font-size: 12px;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+        }
+
+        /* Markdown answer formatting */
+
+        .dm-answer {
+            min-width: 0;
+            color: #171717;
+            font-size: 14px;
+            line-height: 1.85;
+            overflow-wrap: anywhere;
+        }
+
+        .dm-answer > *:first-child {
+            margin-top: 0;
+        }
+
+        .dm-answer > *:last-child {
+            margin-bottom: 0;
+        }
+
+        .dm-answer p {
+            margin: 0 0 14px;
+        }
+
+        .dm-answer h1,
+        .dm-answer h2,
+        .dm-answer h3,
+        .dm-answer h4,
+        .dm-answer h5 {
+            margin: 22px 0 11px;
+            font-weight: 750;
+            line-height: 1.4;
+        }
+
+        .dm-answer h1 {
+            font-size: 22px;
+        }
+
+        .dm-answer h2 {
+            font-size: 19px;
+        }
+
+        .dm-answer h3 {
+            font-size: 16px;
+        }
+
+        .dm-answer h4,
+        .dm-answer h5 {
+            font-size: 14px;
+        }
+
+        .dm-answer strong,
+        .dm-answer b {
+            font-weight: 750;
+        }
+
+        .dm-answer ul,
+        .dm-answer ol {
+            margin: 10px 0 18px;
+            padding-left: 25px;
+        }
+
+        .dm-answer li {
+            margin: 6px 0;
+            padding-left: 3px;
+        }
+
+        .dm-answer li::marker {
+            color: var(--dm-primary);
+        }
+
+        .dm-answer blockquote {
+            margin: 16px 0;
+            padding: 12px 16px;
+            border-left: 3px solid #c5b7ff;
+            background: #f8f6ff;
+            color: #333333;
+        }
+
+        .dm-answer a {
+            color: #5235d4;
+            text-decoration: underline;
+            overflow-wrap: anywhere;
+        }
+
+        /* Responsive answer tables */
+
+        .dm-table-wrap {
+            width: 100%;
+            max-width: 100%;
+            margin: 16px 0 22px;
+            overflow-x: auto;
+            border: 1px solid #e2e4ec;
+            border-radius: 10px;
+            background: #ffffff;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .dm-answer table {
+            width: 100%;
+            min-width: 460px;
+            border-collapse: collapse;
+            background: #ffffff;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .dm-answer thead {
+            background: #f0edff;
+        }
+
+        .dm-answer th {
+            padding: 12px 14px;
+            border-bottom: 1px solid #dcd5ff;
+            background: #f0edff;
+            font-weight: 750;
+            text-align: left;
+        }
+
+        .dm-answer td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--dm-border);
+            text-align: left;
+            vertical-align: top;
+            overflow-wrap: anywhere;
+        }
+
+        .dm-answer tbody tr:nth-child(even) {
+            background: #fafaff;
+        }
+
+        .dm-answer tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        /* Code blocks */
+
+        .dm-answer pre {
+            max-width: 100%;
+            margin: 14px 0;
+            padding: 15px;
+            overflow-x: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f7f7fa;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .dm-answer code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            background: #f0edff;
+            color: #382080;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 0.92em;
+            overflow-wrap: anywhere;
+        }
+
+        .dm-answer pre code {
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            white-space: pre;
+        }
+
+        .dm-result-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #f0f1f5;
+            color: var(--dm-muted);
+            font-size: 10px;
+            line-height: 1.7;
+        }
+
+        /* =========================
+           DOCUMENT LIBRARY
+        ========================= */
+
+        .dm-library {
+            margin-top: 35px;
+        }
+
+        .dm-library-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .dm-library-title {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .dm-library-count {
+            color: var(--dm-muted);
+            font-size: 11px;
+        }
+
+        .dm-document-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 13px;
+        }
+
+        .dm-document-card {
+            min-width: 0;
+            padding: 15px;
+            border: 1px solid var(--dm-border);
+            border-radius: 13px;
+            background: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .dm-document-card:hover {
+            border-color: #d4ccff;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .dm-document-card.is-selected {
+            border-color: #c7bcff;
+            box-shadow: 0 0 0 2px rgba(114, 87, 232, 0.06);
+        }
+
+        .dm-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .dm-card-name {
+            display: block;
+            overflow-wrap: anywhere;
+            margin: 2px 0 5px;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.5;
+        }
+
+        .dm-card-meta {
+            color: var(--dm-muted);
+            font-size: 10px;
+            line-height: 1.6;
+        }
+
+        .dm-card-status {
+            display: inline-block;
+            margin-top: 11px;
+            padding: 5px 8px;
+            border-radius: 20px;
+            background: #f0f7f2;
+            color: #237640;
+            font-size: 9px;
+            font-weight: 800;
+        }
+
+        .dm-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f1f5;
+        }
+
+        .dm-delete-button:hover {
+            border-color: #f0cccc;
+            background: #fff8f8;
+            color: #b33a3a;
+        }
+
+        .dm-inline-form {
+            display: inline;
+            margin: 0;
+        }
+
+        .dm-empty-library {
+            grid-column: 1 / -1;
+            padding: 36px 20px;
+            border: 1px dashed #d8dce7;
+            border-radius: 13px;
+            background: #ffffff;
+            text-align: center;
+        }
+
+        .dm-empty-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 15px;
+            border-radius: 14px;
+            background: #f0edff;
+            color: var(--dm-primary);
+            font-size: 24px;
+        }
+
+        .dm-empty-library h3 {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .dm-empty-library p {
+            max-width: 330px;
+            margin: 0 auto 17px;
+            color: var(--dm-muted);
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .dm-footer-note {
+            margin-top: 35px;
+            color: var(--dm-muted);
+            font-size: 10px;
+            line-height: 1.8;
+            text-align: center;
+        }
+        /* =========================
+           MOBILE SIDEBAR OVERLAY
+        ========================= */
+
+        .dm-sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 25;
+            display: none;
+            background: rgba(18, 21, 36, 0.38);
+        }
+
+        .dm-sidebar-overlay.is-visible {
+            display: block;
+        }
+
+        /* =========================
+           RESPONSIVE DESIGN
+        ========================= */
+
+        @media (max-width: 1000px) {
+            :root {
+                --dm-sidebar-width: 250px;
+            }
+
+            .dm-content {
+                padding: 28px 22px 45px;
+            }
+
+            .dm-topbar {
+                padding: 13px 22px;
+            }
+
+            .dm-document-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .dm-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dm-sidebar.is-open {
+                transform: translateX(0);
+            }
+
+            .dm-sidebar-close,
+            .dm-menu-button {
+                display: inline-flex;
+            }
+
+            .dm-main {
+                margin-left: 0;
+            }
+
+            .dm-topbar {
+                min-height: 61px;
+                padding: 11px 15px;
+            }
+
+            .dm-content {
+                padding: 27px 16px 40px;
+            }
+
+            .dm-hero {
+                margin-top: 7px;
+            }
+
+            .dm-hero h1 {
+                font-size: 33px;
+                letter-spacing: -1.2px;
+            }
+
+            .dm-stats {
+                gap: 8px;
+            }
+
+            .dm-stat-card {
+                padding: 12px;
+            }
+
+            .dm-stat-number {
+                font-size: 21px;
+            }
+
+            .dm-stat-label {
+                font-size: 10px;
+            }
+
+            .dm-composer {
+                padding: 12px;
+            }
+
+            .dm-composer-bottom {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .dm-composer-actions {
+                width: 100%;
+            }
+
+            .dm-composer-actions .dm-action-button {
+                flex: 1;
+            }
+
+            .dm-library-heading {
+                align-items: flex-start;
+            }
+
+            .dm-result-body {
+                padding: 15px;
+            }
+
+            .dm-answer table {
+                min-width: 430px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .dm-brand {
+                font-size: 21px;
+            }
+
+            .dm-topbar-caption {
+                display: none;
+            }
+
+            .dm-upload-button {
+                padding: 10px 11px;
+                font-size: 11px;
+            }
+
+            .dm-hero h1 {
+                font-size: 29px;
+            }
+
+            .dm-hero-description {
+                font-size: 12px;
+            }
+
+            .dm-stat-card {
+                padding: 10px;
+            }
+
+            .dm-stat-number {
+                font-size: 19px;
+            }
+
+            .dm-composer-hint {
+                display: none;
+            }
+
+            .dm-chip {
+                font-size: 10px;
+            }
+
+            .dm-result-header {
+                padding: 13px;
+            }
+
+            .dm-answer table {
+                min-width: 400px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+            }
+        }
+
+        /* =========================
+           AGENT EXECUTION TRACE
+        ========================= */
+
+        .dm-agent-trace {
+            margin-top: 18px;
+            padding: 18px;
+            border: 1px solid #e8eaf1;
+            border-radius: 13px;
+            background: #ffffff;
+        }
+
+        .dm-agent-trace-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .dm-agent-trace-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .dm-agent-badge {
+            padding: 5px 9px;
+            border-radius: 20px;
+            background: #f0fbf3;
+            color: #237640;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .dm-agent-step {
+            padding: 12px;
+            margin-top: 10px;
+            border: 1px solid #e8eaf1;
+            border-radius: 10px;
+            background: #fafaff;
+        }
+
+        .dm-agent-step-name {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .dm-agent-detail {
+            margin: 5px 0 0;
+            color: #555555;
+            font-size: 12px;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        .dm-agent-detail code {
+            padding: 2px 5px;
+            border-radius: 4px;
+            background: #f0edff;
+            color: #382080;
+            overflow-wrap: anywhere;
+        }
+
+        .dm-agent-trace pre.dm-agent-detail {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f7f7fa;
+            font-family: Consolas, "Courier New", monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dm-app">
+
+        <!-- SIDEBAR -->
+        <aside class="dm-sidebar" id="dmSidebar">
+
+            <div class="dm-brand-row">
+                <a class="dm-brand" href="{{ url_for('dashboard') }}">
+                    DocuMind <span>AI</span>
+                </a>
+
+                <button class="dm-sidebar-close"
+                        id="closeSidebar"
+                        type="button"
+                        aria-label="Close sidebar">
+                    ×
+                </button>
+            </div>
+
+            <button class="dm-new-chat"
+                    id="newChatButton"
+                    type="button">
+                <span aria-hidden="true">＋</span>
+                New conversation
+            </button>
+
+            <p class="dm-side-label">Search documents</p>
+
+            <div class="dm-search-wrap">
+                <span class="dm-search-icon" aria-hidden="true">⌕</span>
+
+                <input class="dm-search"
+                       id="documentSearch"
+                       type="search"
+                       placeholder="Find a document..."
+                       aria-label="Search documents by filename"
+                       autocomplete="off">
+            </div>
+
+            <p class="dm-side-label">Your documents</p>
+
+            <div class="dm-document-list" id="sidebarDocumentList">
+                {% for document in documents %}
+                <button class="dm-document-item"
+                        type="button"
+                        data-document-id="{{ document.id }}"
+                        data-document-name="{{ document.document_name }}"
+                        data-document-type="{{ document.document_type }}"
+                        aria-pressed="false"
+                        title="{{ document.document_name }}">
+
+                    <span class="dm-document-icon" aria-hidden="true">
+                        {{ document.document_type|upper }}
+                    </span>
+
+                    <span class="dm-document-info">
+                        <span class="dm-document-name">
+                            {{ document.document_name }}
+                        </span>
+
+                        <span class="dm-document-meta">
+                            {{ document.document_type|upper }} document
+                        </span>
+                    </span>
+                </button>
+                {% else %}
+                <p class="dm-empty-sidebar">
+                    No documents yet. Upload a file to get started.
+                </p>
+                {% endfor %}
+            </div>
+
+            <p class="dm-no-search-results" id="sidebarNoResults">
+                No matching filenames found.
+            </p>
+
+            <div class="dm-sidebar-bottom">
+                <div class="dm-account">
+
+                    <div class="dm-avatar" aria-hidden="true">
+                        {{ (email or "U")[0]|upper }}
+                    </div>
+
+                    <div class="dm-account-info">
+                        <span class="dm-account-name">
+                            {{ email or "Your account" }}
+                        </span>
+
+                        <span class="dm-account-subtitle">
+                            Personal workspace
+                        </span>
+                    </div>
+
+                    <form action="{{ url_for('logout') }}"
+                          method="post"
+                          class="dm-inline-form">
+
+                        <button class="dm-logout" type="submit">
+                            Log out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+
+        <div class="dm-sidebar-overlay"
+             id="sidebarOverlay"
+             aria-hidden="true">
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <main class="dm-main">
+
+            <header class="dm-topbar">
+
+                <div class="dm-topbar-left">
+                    <button class="dm-menu-button"
+                            id="openSidebar"
+                            type="button"
+                            aria-label="Open sidebar"
+                            aria-expanded="false">
+                        ☰
+                    </button>
+
+                    <div>
+                        <div class="dm-page-title">
+                            Document workspace
+                        </div>
+
+                        <div class="dm-topbar-caption">
+                            Your files, organized in one place
+                        </div>
+                    </div>
+                </div>
+
+                <button class="dm-upload-button"
+                        id="uploadTrigger"
+                        type="button">
+                    <span aria-hidden="true">＋</span>
+                    Upload document
+                </button>
+            </header>
+
+            <div class="dm-content">
+
+                <!-- FLASH MESSAGES -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="dm-flashes" aria-live="polite">
+                        {% for category, message in messages %}
+                        <div class="dm-flash {{ category }}">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- UPLOAD FORM -->
+                <form id="uploadForm"
+                      action="{{ url_for('upload_document') }}"
+                      method="post"
+                      enctype="multipart/form-data"
+                      hidden>
+
+                    <input id="uploadFile"
+                           type="file"
+                           name="file"
+                           accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                           required>
+                </form>
+
+                <!-- HERO -->
+                <section class="dm-hero">
+
+                    <div class="dm-hero-badge">
+                        <span aria-hidden="true">✦</span>
+                        YOUR PERSONAL AI DOCUMENT ASSISTANT
+                    </div>
+
+                    <h1>
+                        What would you like to<br>
+                        <span>understand today?</span>
+                    </h1>
+
+                    <p class="dm-hero-description">
+                        Select a PDF from your library, ask a question about
+                        its contents, or generate a quick summary. Your
+                        documents stay in your personal workspace.
+                    </p>
+                </section>
+
+                <!-- STATISTICS -->
+                <section class="dm-stats"
+                         aria-label="Document statistics">
+
+                    <article class="dm-stat-card">
+                        <p class="dm-stat-label">Total documents</p>
+                        <p class="dm-stat-number">
+                            {{ documents|length }}
+                        </p>
+                        <p class="dm-stat-caption">
+                            Files in your workspace
+                        </p>
+                    </article>
+
+                    <article class="dm-stat-card">
+                        <p class="dm-stat-label">PDF documents</p>
+                        <p class="dm-stat-number">
+                            {{ documents
+                               |selectattr('document_type', 'equalto', 'pdf')
+                               |list
+                               |length }}
+                        </p>
+                        <p class="dm-stat-caption">
+                            Available for AI questions
+                        </p>
+                    </article>
+
+                    <article class="dm-stat-card">
+                        <p class="dm-stat-label">AI assistant</p>
+                        <p class="dm-stat-number">✦</p>
+                        <p class="dm-stat-caption">
+                            Ask or summarize a PDF
+                        </p>
+                    </article>
+                </section>
+
+                <!-- SELECTED DOCUMENT -->
+                <section class="dm-selected-document"
+                         id="selectedDocument"
+                         aria-live="polite">
+
+                    <div class="dm-selected-icon"
+                         id="selectedDocumentIcon">
+                        PDF
+                    </div>
+
+                    <div class="dm-selected-info">
+                        <p class="dm-selected-label">
+                            SELECTED DOCUMENT
+                        </p>
+
+                        <span class="dm-selected-name"
+                              id="selectedDocumentName">
+                            No document selected
+                        </span>
+                    </div>
+
+                    <button class="dm-clear-selection"
+                            id="clearSelection"
+                            type="button">
+                        Clear
+                    </button>
+                </section>
+
+                <!-- QUESTION COMPOSER -->
+                <section class="dm-composer" id="composer">
+
+                    <div class="dm-composer-top">
+                        <span class="dm-composer-title">
+                            Ask DocuMind AI
+                        </span>
+
+                        <span class="dm-composer-hint">
+                            PDF text analysis
+                        </span>
+                    </div>
+
+                    <form id="askForm" method="post">
+
+                        <textarea class="dm-question"
+                                  id="questionInput"
+                                  name="question"
+                                  maxlength="2000"
+                                  placeholder="First select a PDF, then ask something like: Extract the invoice number, GST and total amount."
+                                  aria-label="Ask a question about the selected PDF"></textarea>
+
+                        <div class="dm-composer-bottom">
+
+                            <span class="dm-composer-note">
+                                AI answers are generated from readable PDF text.
+                            </span>
+
+                            <div class="dm-composer-actions">
+
+                                <button class="dm-action-button"
+                                        id="summarizeSelected"
+                                        type="button">
+                                    <span aria-hidden="true">≡</span>
+                                    Summarize
+                                </button>
+
+                                <button class="dm-action-button dm-send"
+                                        id="askButton"
+                                        type="submit">
+                                    Ask AI
+                                    <span aria-hidden="true">↑</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- QUICK PROMPTS -->
+                <section class="dm-quick-prompts">
+                    <p class="dm-quick-heading">TRY ASKING</p>
+
+                    <div class="dm-chip-list">
+
+                        <button class="dm-chip"
+                                type="button"
+                                data-prompt="Summarize the main points of this document.">
+                            Summarize key points
+                        </button>
+
+                        <button class="dm-chip"
+                                type="button"
+                                data-prompt="What are the most important dates, deadlines, or amounts mentioned in this document?">
+                            Find dates and amounts
+                        </button>
+
+                        <button class="dm-chip"
+                                type="button"
+                                data-prompt="Explain this document in simple English.">
+                            Explain simply
+                        </button>
+
+                        <button class="dm-chip"
+                                type="button"
+                                data-prompt="List the main responsibilities, conditions, or obligations mentioned in this document.">
+                            Find key obligations
+                        </button>
+
+                        <button class="dm-chip"
+                                type="button"
+                                data-prompt="Analyze this invoice. Extract the invoice number, invoice date, due date, seller, customer, line items, quantities, unit prices, subtotal, GST, total amount, and payment status. Present the results in a Markdown table. Do not guess missing information; mark unavailable fields as Not found.">
+                            Analyze invoice
+                        </button>
+
+                    </div>
+                </section>
+
+                <!-- AI RESPONSE STARTS HERE -->
+                {% if ai_answer %}
+                <section class="dm-result" id="aiResult">
+
+                    <div class="dm-result-header">
+                        <div class="dm-result-heading">
+                            <div class="dm-result-avatar"
+                                 aria-hidden="true">
+                                ✦
+                            </div>
+
+                            <div>
+                                <h2 class="dm-result-title">
+                                    DocuMind AI response
+                                </h2>
+                                                            <p class="dm-result-subtitle">
+                                {{ ai_document_name or "Selected document" }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button class="dm-copy-button"
+                            id="copyAnswer"
+                            type="button">
+                        Copy answer
+                    </button>
+                </div>
+
+                <div class="dm-result-body">
+                    {% if ai_question %}
+                    <div class="dm-question-display">
+                        <strong>Your request:</strong>
+                        {{ ai_question }}
+                    </div>
+                    {% endif %}
+
+                    <div class="dm-answer" id="aiAnswerText">{{ ai_answer }}</div>
+                </div>
+
+                <div class="dm-result-footer">
+                    AI-generated content may contain errors. Verify important
+                    information against the original document.
+                </div>
+
+                <!-- CLAIM VERIFICATION -->
+                {% if claim_verification %}
+                <div class="dm-agent-trace">
+                    <div class="dm-agent-trace-header">
+                        <h3 class="dm-agent-trace-title">
+                            Evidence Verification
+                        </h3>
+                        <span class="dm-agent-badge">Analysis</span>
+                    </div>
+
+                    {% if claim_verification is mapping %}
+                        <pre class="dm-agent-detail">{{ claim_verification | tojson(indent=2) }}</pre>
+                    {% elif claim_verification is sequence and claim_verification is not string %}
+                        {% for claim in claim_verification %}
+                        <div class="dm-agent-step">
+                            <pre class="dm-agent-detail">{{ claim | tojson(indent=2) }}</pre>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <pre class="dm-agent-detail">{{ claim_verification }}</pre>
+                    {% endif %}
+
+                    <p class="dm-agent-detail">
+                        AI-assisted verification. Confirm important claims
+                        against the original document.
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- CITATION AND EVIDENCE REPORT -->
+                {% if evidence_report %}
+                <div class="dm-agent-trace">
+                    <div class="dm-agent-trace-header">
+                        <h3 class="dm-agent-trace-title">
+                            Citation and Evidence Report
+                        </h3>
+                    </div>
+
+                    <pre class="dm-agent-detail">{{ evidence_report | tojson(indent=2) }}</pre>
+                </div>
+                {% endif %}
+
+                <!-- AGENT EXECUTION TRACE -->
+                {% if ai_trace %}
+                <div class="dm-agent-trace">
+                    <div class="dm-agent-trace-header">
+                        <h3 class="dm-agent-trace-title">
+                            ⚙ Agent Execution Trace
+                        </h3>
+                        <span class="dm-agent-badge">Completed</span>
+                    </div>
+
+                    <p class="dm-agent-detail">
+                        The agent used {{ ai_trace|length }} tool call(s).
+                    </p>
+
+                    {% for item in ai_trace %}
+                    <div class="dm-agent-step">
+                        <p class="dm-agent-step-name">
+                            Step {{ loop.index }} — {{ item.tool }}
+                        </p>
+
+                        <p class="dm-agent-detail">
+                            <strong>Arguments:</strong>
+                            <code>{{ item.arguments | tojson }}</code>
+                        </p>
+
+                        <p class="dm-agent-detail">
+                            <strong>Result:</strong>
+                            <code>{{ item.result }}</code>
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </section>
+            {% endif %}
+
+            <!-- DOCUMENT LIBRARY -->
+            <section class="dm-library" id="documentLibrary">
+                <div class="dm-library-heading">
+                    <h2 class="dm-library-title">
+                        Your document library
+                    </h2>
+
+                    <span class="dm-library-count">
+                        {{ documents|length }} document(s)
+                    </span>
+                </div>
+
+                <div class="dm-document-grid" id="documentGrid">
+                    {% for document in documents %}
+                    <article class="dm-document-card"
+                             data-document-id="{{ document.id }}"
+                             data-document-name="{{ document.document_name }}"
+                             data-document-type="{{ document.document_type }}">
+
+                        <div class="dm-card-top">
+                            <div class="dm-card-file-icon">
+                                {{ document.document_type|upper }}
+                            </div>
+
+                            <div class="dm-card-info">
+                                <span class="dm-card-name">
+                                    {{ document.document_name }}
+                                </span>
+
+                                <div class="dm-card-meta">
+                                    Type: {{ document.document_type|upper }}
+                                </div>
+
+                                <span class="dm-card-status">Uploaded</span>
+                            </div>
+                        </div>
+
+                        <div class="dm-card-actions">
+                            <button class="dm-mini-button select-document"
+                                    type="button"
+                                    data-document-id="{{ document.id }}">
+                                Select document
+                            </button>
+
+                            <a class="dm-mini-button"
+                               href="{{ url_for('download_document', document_id=document.id) }}">
+                                Download
+                            </a>
+
+                            <form class="dm-inline-form"
+                                  action="{{ url_for('delete_document', document_id=document.id) }}"
+                                  method="post"
+                                  onsubmit="return confirm('Are you sure you want to delete this document?');">
+
+                                <button class="dm-mini-button dm-delete-button"
+                                        type="submit">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                    {% else %}
+                    <div class="dm-empty-library">
+                        <div class="dm-empty-icon">＋</div>
+
+                        <h3>No documents uploaded yet</h3>
+
+                        <p>
+                            Upload a PDF to start asking questions, generating
+                            summaries, and extracting invoice information.
+                        </p>
+
+                        <button class="dm-upload-button"
+                                id="emptyUploadTrigger"
+                                type="button">
+                            Upload your first document
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <p class="dm-footer-note">
+                DocuMind AI · Your personal document workspace
+            </p>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    "use strict";
+
+    const sidebar = document.getElementById("dmSidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    const openSidebarButton = document.getElementById("openSidebar");
+    const closeSidebarButton = document.getElementById("closeSidebar");
+
+    const uploadTrigger = document.getElementById("uploadTrigger");
+    const emptyUploadTrigger = document.getElementById("emptyUploadTrigger");
+    const uploadFile = document.getElementById("uploadFile");
+    const uploadForm = document.getElementById("uploadForm");
+
+    const searchInput = document.getElementById("documentSearch");
+
+    const sidebarItems = Array.from(
+        document.querySelectorAll(".dm-document-item")
+    );
+
+    const documentCards = Array.from(
+        document.querySelectorAll(".dm-document-card")
+    );
+
+    const noSearchResults = document.getElementById("sidebarNoResults");
+
+    const selectedDocument = document.getElementById("selectedDocument");
+    const selectedDocumentName = document.getElementById("selectedDocumentName");
+    const selectedDocumentIcon = document.getElementById("selectedDocumentIcon");
+    const clearSelectionButton = document.getElementById("clearSelection");
+
+    const askForm = document.getElementById("askForm");
+    const questionInput = document.getElementById("questionInput");
+    const askButton = document.getElementById("askButton");
+    const summarizeButton = document.getElementById("summarizeSelected");
+
+    const answerElement = document.getElementById("aiAnswerText");
+    const copyAnswerButton = document.getElementById("copyAnswer");
+    const newChatButton = document.getElementById("newChatButton");
+
+    const STORAGE_KEY = "documind_selected_document";
+
+    let selectedDoc = null;
+
+    /* MOBILE SIDEBAR */
+
+    function openSidebar() {
+        if (!sidebar || !overlay) return;
+
+        sidebar.classList.add("is-open");
+        overlay.classList.add("is-visible");
+
+        if (openSidebarButton) {
+            openSidebarButton.setAttribute("aria-expanded", "true");
+        }
+
+        overlay.setAttribute("aria-hidden", "false");
+    }
+
+    function closeSidebar() {
+        if (!sidebar || !overlay) return;
+
+        sidebar.classList.remove("is-open");
+        overlay.classList.remove("is-visible");
+
+        if (openSidebarButton) {
+            openSidebarButton.setAttribute("aria-expanded", "false");
+        }
+
+        overlay.setAttribute("aria-hidden", "true");
+    }
+
+    if (openSidebarButton) {
+        openSidebarButton.addEventListener("click", openSidebar);
+    }
+
+    if (closeSidebarButton) {
+        closeSidebarButton.addEventListener("click", closeSidebar);
+    }
+
+    if (overlay) {
+        overlay.addEventListener("click", closeSidebar);
+    }
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeSidebar();
+    });
+
+    /* UPLOAD DOCUMENT */
+
+    function openFilePicker() {
+        if (uploadFile) uploadFile.click();
+    }
+
+    if (uploadTrigger) {
+        uploadTrigger.addEventListener("click", openFilePicker);
+    }
+
+    if (emptyUploadTrigger) {
+        emptyUploadTrigger.addEventListener("click", openFilePicker);
+    }
+
+    if (uploadFile && uploadForm) {
+        uploadFile.addEventListener("change", function () {
+            if (!uploadFile.files || !uploadFile.files.length) return;
+
+            const file = uploadFile.files[0];
+            const allowedExtensions = /\.(pdf|png|jpe?g)$/i;
+
+            if (!allowedExtensions.test(file.name)) {
+                alert("Please select a PDF, PNG, or JPG file.");
+                uploadFile.value = "";
+                return;
+            }
+
+            uploadForm.submit();
+        });
+    }
+
+    /* SELECT A DOCUMENT */
+
+    function selectDocument(id, name, type, saveSelection = true) {
+        selectedDoc = {
+            id: String(id),
+            name: name || "Selected document",
+            type: type || "pdf"
+        };
+
+        if (saveSelection) {
+            try {
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(selectedDoc)
+                );
+            } catch (error) {
+                console.warn("Could not save document selection.", error);
+            }
+        }
+
+        if (selectedDocument) {
+            selectedDocument.classList.add("is-visible");
+        }
+
+        if (selectedDocumentName) {
+            selectedDocumentName.textContent = selectedDoc.name;
+        }
+
+        if (selectedDocumentIcon) {
+            selectedDocumentIcon.textContent = selectedDoc.type.toUpperCase();
+        }
+
+        sidebarItems.forEach(function (item) {
+            const isSelected = item.dataset.documentId === selectedDoc.id;
+
+            item.classList.toggle("is-selected", isSelected);
+            item.setAttribute("aria-pressed", String(isSelected));
+        });
+
+        documentCards.forEach(function (card) {
+            card.classList.toggle(
+                "is-selected",
+                card.dataset.documentId === selectedDoc.id
+            );
+        });
+
+        if (askForm) {
+            askForm.action =
+                "/documents/" + encodeURIComponent(selectedDoc.id) + "/ask";
+        }
+
+        closeSidebar();
+    }
+
+    sidebarItems.forEach(function (item) {
+        item.addEventListener("click", function () {
+            selectDocument(
+                item.dataset.documentId,
+                item.dataset.documentName,
+                item.dataset.documentType
+            );
+        });
+    });
+
+    documentCards.forEach(function (card) {
+        const selectButton = card.querySelector(".select-document");
+
+        if (!selectButton) return;
+
+        selectButton.addEventListener("click", function () {
+            selectDocument(
+                card.dataset.documentId,
+                card.dataset.documentName,
+                card.dataset.documentType
+            );
+
+            if (questionInput) questionInput.focus();
+
+            const composer = document.getElementById("composer");
+
+            if (composer) {
+                composer.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }
+        });
+    });
+
+    if (clearSelectionButton) {
+        clearSelectionButton.addEventListener("click", function () {
+            selectedDoc = null;
+
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (error) {
+                console.warn("Could not clear saved selection.", error);
+            }
+
+            if (selectedDocument) {
+                selectedDocument.classList.remove("is-visible");
+            }
+
+            if (selectedDocumentName) {
+                selectedDocumentName.textContent = "No document selected";
+            }
+
+            sidebarItems.forEach(function (item) {
+                item.classList.remove("is-selected");
+                item.setAttribute("aria-pressed", "false");
+            });
+
+            documentCards.forEach(function (card) {
+                card.classList.remove("is-selected");
+            });
+
+            if (askForm) askForm.removeAttribute("action");
+        });
+    }
+
+    /* RESTORE PREVIOUS SELECTION */
+
+    try {
+        const savedSelection = localStorage.getItem(STORAGE_KEY);
+
+        if (savedSelection) {
+            const savedDoc = JSON.parse(savedSelection);
+
+            const matchingItem = sidebarItems.find(function (item) {
+                return item.dataset.documentId === String(savedDoc.id);
+            });
+
+            if (matchingItem) {
+                selectDocument(
+                    matchingItem.dataset.documentId,
+                    matchingItem.dataset.documentName,
+                    matchingItem.dataset.documentType,
+                    false
+                );
+            } else {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    } catch (error) {
+        console.warn("Could not restore document selection.", error);
+    }
+
+    /* SEARCH DOCUMENTS */
+
+    if (searchInput) {
+        searchInput.addEventListener("input", function () {
+            const query = searchInput.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            sidebarItems.forEach(function (item) {
+                const name = (item.dataset.documentName || "").toLowerCase();
+                const matches = name.includes(query);
+
+                item.hidden = !matches;
+
+                if (matches) visibleCount++;
+            });
+
+            if (noSearchResults) {
+                noSearchResults.style.display =
+                    sidebarItems.length > 0 && visibleCount === 0
+                        ? "block"
+                        : "none";
+            }
+
+            documentCards.forEach(function (card) {
+                const name = (card.dataset.documentName || "").toLowerCase();
+                card.hidden = !name.includes(query);
+            });
+        });
+    }
+
+    /* QUICK PROMPTS */
+
+    document.querySelectorAll(".dm-chip[data-prompt]").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+            if (!questionInput) return;
+
+            questionInput.value = chip.dataset.prompt || "";
+            questionInput.focus();
+        });
+    });
+
+    /* ASK AI */
+
+    if (askForm) {
+        askForm.addEventListener("submit", function (event) {
+            if (!selectedDoc) {
+                event.preventDefault();
+                alert("Please select a document before asking a question.");
+                return;
+            }
+
+            if (!questionInput || !questionInput.value.trim()) {
+                event.preventDefault();
+                alert("Please enter a question first.");
+                if (questionInput) questionInput.focus();
+                return;
+            }
+
+            if (askButton) {
+                askButton.disabled = true;
+                askButton.textContent = "Processing...";
+            }
+        });
+    }
+
+    /* SUMMARIZE DOCUMENT */
+
+    if (summarizeButton) {
+        summarizeButton.addEventListener("click", function () {
+            if (!selectedDoc) {
+                alert("Please select a document first.");
+                return;
+            }
+
+            if (!askForm || !questionInput) return;
+
+            questionInput.value =
+                "Summarize this document in clear sections. Include the main purpose, key points, important dates, amounts, obligations, and conclusions. Use headings and bullet points. Do not invent information.";
+
+            let actionInput = askForm.querySelector('input[name="action"]');
+
+            if (!actionInput) {
+                actionInput = document.createElement("input");
+                actionInput.type = "hidden";
+                actionInput.name = "action";
+                askForm.appendChild(actionInput);
+            }
+
+            actionInput.value = "summary";
+            askForm.requestSubmit();
+        });
+    }
+
+    if (askForm && questionInput) {
+        questionInput.addEventListener("input", function () {
+            const actionInput = askForm.querySelector('input[name="action"]');
+
+            if (actionInput) {
+                actionInput.value = "ask";
+            }
+        });
+    }
+
+    /* RENDER AI MARKDOWN SAFELY */
+
+    function renderMarkdownAnswer() {
+        if (!answerElement) return;
+
+        const rawMarkdown = answerElement.textContent || "";
+
+        if (!rawMarkdown.trim()) return;
+
+        if (
+            typeof marked === "undefined" ||
+            typeof DOMPurify === "undefined"
+        ) {
+            console.error("Markdown libraries did not load.");
+            return;
+        }
+
+        const renderedHTML = marked.parse(rawMarkdown, {
+            gfm: true,
+            breaks: true
+        });
+
+        const safeHTML = DOMPurify.sanitize(renderedHTML, {
+            USE_PROFILES: { html: true }
+        });
+
+        answerElement.innerHTML = safeHTML;
+
+        answerElement.querySelectorAll("table").forEach(function (table) {
+            if (
+                table.parentElement &&
+                table.parentElement.classList.contains("dm-table-wrap")
+            ) {
+                return;
+            }
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "dm-table-wrap";
+
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        });
+
+        answerElement.querySelectorAll("a").forEach(function (link) {
+            const href = link.getAttribute("href") || "";
+
+            if (/^https?:\/\//i.test(href)) {
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+            }
+        });
+    }
+
+    renderMarkdownAnswer();
+
+    /* COPY AI ANSWER */
+
+    if (copyAnswerButton && answerElement) {
+        copyAnswerButton.addEventListener("click", async function () {
+            const textToCopy = answerElement.innerText || "";
+
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                copyAnswerButton.textContent = "Copied!";
+            } catch (error) {
+                const temp = document.createElement("textarea");
+
+                temp.value = textToCopy;
+                temp.style.position = "fixed";
+                temp.style.opacity = "0";
+
+                document.body.appendChild(temp);
+                temp.select();
+
+                const copied = document.execCommand("copy");
+                temp.remove();
+
+                copyAnswerButton.textContent = copied
+                    ? "Copied!"
+                    : "Copy failed";
+            }
+
+            setTimeout(function () {
+                copyAnswerButton.textContent = "Copy answer";
+            }, 1800);
+        });
+    }
+
+    /* NEW CONVERSATION */
+
+    if (newChatButton) {
+        newChatButton.addEventListener("click", function () {
+            if (questionInput) {
+                questionInput.value = "";
+                questionInput.focus();
+            }
+
+            if (askForm) {
+                const actionInput = askForm.querySelector('input[name="action"]');
+
+                if (actionInput) actionInput.value = "ask";
+            }
+
+            const composer = document.getElementById("composer");
+
+            if (composer) {
+                composer.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>
